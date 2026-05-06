@@ -33,13 +33,15 @@ export const INTEGRATIONS = {
      *   - New quest: "Pyromaan — Vind X Roze TNT"
      */
     funTnt: {
-        // Disabled: Diamondhead24's TNT Addon requires beta APIs which we
-        // don't enable. If you want fun-TNT support, install a different
-        // addon (see packs/README.md for stable-API alternatives) and put
-        // its item ID here. e.g.:
-        //     itemId: "douarmc:pink_tnt"
-        itemId:      null,
-        displayName: "TNT Plus",
+        // Default for DouarMC's More TNT pack on CurseForge (stable APIs).
+        // Lightning TNT is a fun-but-not-too-destructive variant. Other
+        // options in the same pack (browse packs/<name>/blocks/*.json):
+        //   douarmc_more_tnt:cake_tnt         — cake-themed
+        //   douarmc_more_tnt:firework_tnt     — fireworks display
+        //   douarmc_more_tnt:teleport_tnt     — teleports nearby entities
+        //   douarmc_more_tnt:nuclear_tnt      — for adults only
+        itemId:      "douarmc_more_tnt:lightning_tnt",
+        displayName: "Bliksem TNT",
         chestChance: 0.08,
         count:       4,
         questTarget: 3
