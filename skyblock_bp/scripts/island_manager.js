@@ -5,7 +5,7 @@
 // - Stores data via world dynamic properties
 
 import { world, system, BlockPermutation } from "@minecraft/server";
-import { getTheme } from "./themes.js";
+import { getTheme, pickRandomTheme } from "./themes.js";
 
 const ISLAND_SPACING = 1024;          // blocks between island centers
 const ISLAND_Y = 80;                  // island height
@@ -254,6 +254,58 @@ export function teleportToIsland(player) {
             player.sendMessage("§c[Skyblock] Teleport failed — try again in a moment.");
         }
     }, delay);
+}
+
+/**
+ * Orchestrate bonus island creation:
+ *  - pick location (chain placement)
+ *  - pick random theme
+ *  - schedule generation with ticking-area force-load
+ *  - persist to storage
+ *  - notify the player
+ *
+ * Returns true on success, false if no valid location was found
+ * (in which case the caller should NOT bump lastDay so the next
+ * rollover retries with a fresh random seed).
+ */
+export function generateBonusIsland(player) {
+    const loc = pickBonusLocation(player.id);
+    if (!loc) {
+        player.sendMessage("§b[Skyblock] §7Geen ruimte gevonden voor nieuw eiland — probeer later.");
+        return false;
+    }
+
+    const themeId = pickRandomTheme();
+    const theme = getTheme(themeId);
+    const dim = world.getDimension(ISLAND_DIM);
+
+    // Force-load chunks for placement (same pattern as main island).
+    // Per-player ticking area name avoids accumulating one per bonus.
+    const taName = `sb_b_${player.id.replace(/-/g, "").slice(0, 12)}`;
+    try { dim.runCommand(`tickingarea remove ${taName}`); } catch (e) {}
+    try {
+        dim.runCommand(
+            `tickingarea add ${loc.x - 16} 0 ${loc.z - 16} ${loc.x + 16} 200 ${loc.z + 16} ${taName}`
+        );
+    } catch (e) { /* chunks may already be loaded */ }
+
+    // Persist BEFORE generation so a server crash mid-generation doesn't lose the record.
+    appendBonusIsland(player.id, loc.x, loc.y, loc.z, themeId);
+
+    system.runTimeout(() => {
+        try {
+            generateIsland(dim, loc.x, loc.y, loc.z, themeId);
+        } catch (e) { /* ignore — partial gen handled by retry on next visit */ }
+        try { dim.runCommand(`tickingarea remove ${taName}`); } catch (e) {}
+    }, 40);
+
+    const bonusCount = getBonusIslands(player.id).length;
+    player.sendMessage("§b[Skyblock] §6Een nieuwe Minecraft-dag is aangebroken!");
+    player.sendMessage(
+        `§b[Skyblock] §aBonus-eiland #${bonusCount} — ${theme.color}${theme.name}§r §a— gegenereerd op (${loc.x}, ${loc.y}, ${loc.z}).`
+    );
+    player.sendMessage("§7Open §f!island§7 → §fMy Islands§7 om te bezoeken.");
+    return true;
 }
 
 // --- Auto-spawn on first join ---
