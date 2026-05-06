@@ -50,6 +50,26 @@ of `world_resource_packs.json`.
 Re-deployen is veilig: bestaande entries worden ge-update, geen
 duplicates.
 
+## 🧹 Auto-pruning van weeskinderen
+
+Als je een pack verwijdert (uit `packs/` lokaal én uit `<BDS>/behavior_packs/`),
+maar de UUID nog in `world_*_packs.json` staat, dan logt BDS errors zoals
+"requesting dependency on beta APIs" of "Pack not found".
+
+`deploy.sh` lost dit automatisch op: na het syncen scant het beide world
+JSONs, en elke `pack_id` waarvoor géén pack folder (meer) bestaat in
+`<BDS>/{behavior,resource}_packs/` wordt verwijderd. Output ziet er zo uit:
+
+```
+→ Checking for orphan entries:
+  /path/.../world_behavior_packs.json
+  pruned orphan: 41118614-fb0c-4df2-9cf1-a2596b234933
+```
+
+Veilig: alleen entries waarvan we het corresponderende pack niet meer
+kunnen vinden in BDS worden geprund. Manueel toegevoegde packs blijven
+respected zolang hun folder + manifest aanwezig zijn.
+
 ## Privacy
 
 `packs/*` staat in `.gitignore` — third-party addons blijven lokaal en

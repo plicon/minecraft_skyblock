@@ -167,6 +167,62 @@ deploy_pack() {
     update_world_pack_json "$PI_UUID" "$PI_VER" "$world_file"
 }
 
+# --- Helper: prune orphan entries from a world_*.json ---
+# Args: $1 = world json path, $2 = pack root subdir (behavior_packs or resource_packs)
+prune_orphans() {
+    local world_file="$1"
+    local pack_root="$BDS_ROOT/$2"
+    [[ -f "$world_file" ]] || return 0
+
+    WORLD_FILE="$world_file" PACK_ROOT="$pack_root" python3 - <<'PY'
+import json, os
+from pathlib import Path
+
+world_file = os.environ["WORLD_FILE"]
+pack_root  = Path(os.environ["PACK_ROOT"])
+
+installed_uuids = set()
+if pack_root.is_dir():
+    for manifest in pack_root.glob("*/manifest.json"):
+        try:
+            data = json.loads(manifest.read_text())
+            uid = data.get("header", {}).get("uuid")
+            if uid: installed_uuids.add(uid)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+try:
+    with open(world_file) as f:
+        data = json.load(f)
+except (json.JSONDecodeError, FileNotFoundError):
+    raise SystemExit(0)
+
+if not isinstance(data, list):
+    raise SystemExit(0)
+
+orphans = []
+kept = []
+for entry in data:
+    if isinstance(entry, dict):
+        uid = entry.get("pack_id")
+        if uid in installed_uuids:
+            kept.append(entry)
+        else:
+            orphans.append(uid or "<no pack_id>")
+    else:
+        kept.append(entry)
+
+if orphans:
+    with open(world_file, "w") as f:
+        json.dump(kept, f, indent=2)
+        f.write("\n")
+    for uid in orphans:
+        print(f"  pruned orphan: {uid}")
+else:
+    print("  no orphans")
+PY
+}
+
 echo
 deploy_pack "$PACK_SRC" "Main pack"
 echo
@@ -189,6 +245,16 @@ else
     gray "→ ./packs/ does not exist — skipping extra packs."
     gray "  Create ./packs/ and drop unzipped addons there to auto-deploy them."
 fi
+
+# --- Prune orphan world-pack entries ---
+# An entry is "orphan" if its pack_id has no matching pack folder in BDS
+# (e.g., a pack you removed locally without manually editing the world JSON).
+blue "→ Checking for orphan entries:"
+gray "  $WBP_FILE"
+prune_orphans "$WBP_FILE" "behavior_packs"
+gray "  $WRP_FILE"
+prune_orphans "$WRP_FILE" "resource_packs"
+echo
 
 green "✓ Deployment complete."
 gray  "  Restart your BDS server to load the updated packs."
