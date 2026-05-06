@@ -14,6 +14,20 @@ const ISLAND_COUNTER_KEY = "sb:islandCounter";
 const PLAYER_ISLAND_PREFIX = "sb:island:"; // + playerId -> "x,z"
 const PLAYER_VISITED_PREFIX = "sb:visited:"; // + playerId -> bool
 
+// --- Bonus islands (chain layout) ---
+const BONUS_ISLANDS_PREFIX = "sb:bonusIslands:"; // + playerId -> "x,y,z,theme;..."
+const BONUS_DIST_MIN = 32;
+const BONUS_DIST_MAX = 64;
+const BONUS_Y_DELTA = 16;
+const BONUS_Y_MIN = 60;
+const BONUS_Y_MAX = 140;
+const BONUS_MIN_SEPARATION = 16;
+const BONUS_TERRITORY_RADIUS = 480;
+const BONUS_PLACEMENT_RETRIES = 12;
+
+const CIRCLED_DIGITS = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩",
+                        "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"];
+
 /** Get next island grid slot (spiral outward). */
 function nextSlot() {
     let counter = world.getDynamicProperty(ISLAND_COUNTER_KEY);
@@ -40,6 +54,122 @@ function spiralCoord(n) {
         case 3: x = -layer + posInLeg + 1; z = -layer; break;
     }
     return { x, z };
+}
+
+/** Get a player's main island coords, or null if not yet created. */
+export function getMainIsland(playerId) {
+    const stored = world.getDynamicProperty(PLAYER_ISLAND_PREFIX + playerId);
+    if (typeof stored !== "string") return null;
+    const [x, z] = stored.split(",").map(Number);
+    return { x, z };
+}
+
+/** Parse the CSV "x,y,z,theme;..." into an array of bonus islands. */
+export function getBonusIslands(playerId) {
+    const stored = world.getDynamicProperty(BONUS_ISLANDS_PREFIX + playerId);
+    if (typeof stored !== "string" || stored === "") return [];
+    return stored.split(";").map((entry) => {
+        const [x, y, z, theme] = entry.split(",");
+        return { x: Number(x), y: Number(y), z: Number(z), theme };
+    });
+}
+
+/** Append a bonus island to the player's CSV record. */
+export function appendBonusIsland(playerId, x, y, z, theme) {
+    const existing = world.getDynamicProperty(BONUS_ISLANDS_PREFIX + playerId);
+    const entry = `${x},${y},${z},${theme}`;
+    const updated = (typeof existing === "string" && existing.length > 0)
+        ? `${existing};${entry}`
+        : entry;
+    world.setDynamicProperty(BONUS_ISLANDS_PREFIX + playerId, updated);
+}
+
+/**
+ * Pick a valid location for the next bonus island, chained off the
+ * player's last bonus (or main if no bonuses yet). Returns null if no
+ * valid spot is found within BONUS_PLACEMENT_RETRIES attempts.
+ */
+export function pickBonusLocation(playerId) {
+    const main = getMainIsland(playerId);
+    if (!main) return null;
+
+    const bonusList = getBonusIslands(playerId);
+    const anchor = bonusList.length > 0
+        ? bonusList[bonusList.length - 1]
+        : { x: main.x, y: ISLAND_Y, z: main.z };
+
+    const allCenters = [
+        { x: main.x, y: ISLAND_Y, z: main.z },
+        ...bonusList.map((b) => ({ x: b.x, y: b.y, z: b.z }))
+    ];
+
+    for (let attempt = 0; attempt < BONUS_PLACEMENT_RETRIES; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = BONUS_DIST_MIN + Math.random() * (BONUS_DIST_MAX - BONUS_DIST_MIN);
+        const dy = (Math.random() * 2 - 1) * BONUS_Y_DELTA;
+
+        const cx = Math.round(anchor.x + Math.cos(angle) * dist);
+        const cz = Math.round(anchor.z + Math.sin(angle) * dist);
+        const cy = Math.max(BONUS_Y_MIN, Math.min(BONUS_Y_MAX, Math.round(anchor.y + dy)));
+
+        const ddx = cx - main.x, ddz = cz - main.z;
+        if (Math.sqrt(ddx * ddx + ddz * ddz) > BONUS_TERRITORY_RADIUS) continue;
+
+        let collides = false;
+        for (const c of allCenters) {
+            const ex = cx - c.x, ey = cy - c.y, ez = cz - c.z;
+            if (Math.sqrt(ex * ex + ey * ey + ez * ez) < BONUS_MIN_SEPARATION) {
+                collides = true;
+                break;
+            }
+        }
+        if (collides) continue;
+
+        return { x: cx, y: cy, z: cz };
+    }
+    return null;
+}
+
+/** 8-sector compass direction from main toward (dx,dz). */
+function compassDir(dx, dz) {
+    if (dx === 0 && dz === 0) return "";
+    let deg = Math.atan2(-dz, dx) * 180 / Math.PI;
+    if (deg < 0) deg += 360;
+    const sector = Math.round(deg / 45) % 8;
+    return ["E", "NE", "N", "NW", "W", "SW", "S", "SE"][sector];
+}
+
+/**
+ * Return all of a player's islands (main + bonus) with formatted labels
+ * for the My Islands menu.
+ */
+export function getAllIslands(playerId) {
+    const main = getMainIsland(playerId);
+    if (!main) return [];
+
+    const result = [{
+        type: "main",
+        x: main.x, y: ISLAND_Y, z: main.z,
+        theme: "forest",
+        label: `§f★ Main           §aForest§r §7— y ${ISLAND_Y}`
+    }];
+
+    const bonuses = getBonusIslands(playerId);
+    bonuses.forEach((b, i) => {
+        const theme = getTheme(b.theme);
+        const num = i < CIRCLED_DIGITS.length ? CIRCLED_DIGITS[i] : `(${i + 1})`;
+        const ddx = b.x - main.x, ddz = b.z - main.z;
+        const dist = Math.round(Math.sqrt(ddx * ddx + ddz * ddz));
+        const dir = compassDir(ddx, ddz);
+        result.push({
+            type: "bonus",
+            x: b.x, y: b.y, z: b.z,
+            theme: b.theme,
+            label: `§f${num} Day ${i + 1}      ${theme.color}${theme.name}§r §7— y ${b.y}, ${dir} ${dist}`
+        });
+    });
+
+    return result;
 }
 
 /** Generate an island structure at world coords with a given theme. */
