@@ -13,6 +13,7 @@ const ISLAND_DIM = "overworld";       // dimension to use
 const ISLAND_COUNTER_KEY = "sb:islandCounter";
 const PLAYER_ISLAND_PREFIX = "sb:island:"; // + playerId -> "x,z"
 const PLAYER_VISITED_PREFIX = "sb:visited:"; // + playerId -> bool
+const PLAYER_SPAWN_SET_PREFIX = "sb:spawnSet:"; // + playerId -> bool (idempotency)
 
 // --- Bonus islands (chain layout) ---
 const BONUS_ISLANDS_PREFIX = "sb:bonusIslands:"; // + playerId -> "x,y,z,theme;..."
@@ -236,6 +237,14 @@ export function getOrCreateIsland(player) {
     return { x: cx, y: ISLAND_Y + 1, z: cz, dimension: dim, isNew };
 }
 
+/** Set the player's personal spawnpoint to their main island. Idempotent. */
+function setIslandSpawnpoint(player, cx, cz) {
+    try {
+        player.runCommand(`spawnpoint @s ${cx} ${ISLAND_Y + 1} ${cz}`);
+        world.setDynamicProperty(PLAYER_SPAWN_SET_PREFIX + player.id, true);
+    } catch (e) { /* ignore — will retry on next spawn */ }
+}
+
 /** Teleport player to their island. */
 export function teleportToIsland(player) {
     const { x, y, z, dimension, isNew } = getOrCreateIsland(player);
@@ -244,6 +253,7 @@ export function teleportToIsland(player) {
     system.runTimeout(() => {
         try {
             player.teleport({ x: x + 0.5, y, z: z + 0.5 }, { dimension });
+            setIslandSpawnpoint(player, x, z);
             if (isNew) {
                 player.sendMessage("§b[Skyblock] §aYour new island is ready! §7Check the chest for starter items.");
                 player.sendMessage("§b[Skyblock] §7Tip: place §flava§7 above §fice§7 (with a block beside) to make a cobblestone generator.");
@@ -319,5 +329,16 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         world.setDynamicProperty(visitedKey, true);
         player.sendMessage("§b[Skyblock] §7Welcome! Generating your private island...");
         system.runTimeout(() => teleportToIsland(player), 20);
+        return;
+    }
+
+    // Existing player: lazy-set spawnpoint to main if not yet set
+    // (handles users with islands from before 1.1.0).
+    const spawnSet = world.getDynamicProperty(PLAYER_SPAWN_SET_PREFIX + player.id);
+    if (!spawnSet) {
+        const main = getMainIsland(player.id);
+        if (main) {
+            system.runTimeout(() => setIslandSpawnpoint(player, main.x, main.z), 20);
+        }
     }
 });
