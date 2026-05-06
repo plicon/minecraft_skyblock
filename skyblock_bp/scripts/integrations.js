@@ -33,11 +33,12 @@ export const INTEGRATIONS = {
      *   - New quest: "Pyromaan — Vind X Roze TNT"
      */
     funTnt: {
-        // Default for Diamondhead24's TNT Addon on CurseForge.
-        // Other variants in the pack are tnt:tnt2 .. tnt:tnt7 — check
-        // packs/<name>/items/*.json to swap to a kid-friendlier one
-        // (e.g., a smaller-explosion variant).
-        itemId:      "tnt:tnt1",
+        // Disabled: Diamondhead24's TNT Addon requires beta APIs which we
+        // don't enable. If you want fun-TNT support, install a different
+        // addon (see packs/README.md for stable-API alternatives) and put
+        // its item ID here. e.g.:
+        //     itemId: "douarmc:pink_tnt"
+        itemId:      null,
         displayName: "TNT Plus",
         chestChance: 0.08,
         count:       4,
