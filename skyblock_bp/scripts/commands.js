@@ -11,7 +11,7 @@
 
 import { world, system } from "@minecraft/server";
 import { ActionFormData, MessageFormData } from "@minecraft/server-ui";
-import { teleportToIsland, getAllIslands } from "./island_manager.js";
+import { teleportToIsland, getAllIslands, getMainIsland } from "./island_manager.js";
 import { QUESTS, getProgress, isDone } from "./quests.js";
 
 // CommandPermissionLevel.Any = 0. Hardcoded as a literal to avoid relying on
@@ -39,6 +39,7 @@ system.beforeEvents.startup.subscribe((ev) => {
 
     command("island", "Open het Skyblock-menu",                  openMenu);
     command("home",   "Ga naar je hoofdeiland",                  teleportToIsland);
+    command("visit",  "Ga op bezoek bij een andere speler",      showVisitList);
     command("quests", "Bekijk je opdrachten",                    showQuests);
     command("reset",  "Begin je opdrachten opnieuw (vraagt OK)", confirmReset);
     command("spawn",  "Ga naar het beginpunt van de wereld",     teleportSpawn);
@@ -62,6 +63,7 @@ function openMenu(player) {
         .body("§7Wat wil je doen?")
         .button("§aNaar mijn eiland", "textures/items/ender_pearl")
         .button("§dMijn eilanden", "textures/items/map_filled")
+        .button("§bBezoek speler", "textures/items/compass_item")
         .button("§eMijn opdrachten", "textures/items/book_writable")
         .button("§cOpdrachten opnieuw", "textures/blocks/tnt_side")
         .button("§7Hulp", "textures/items/paper");
@@ -71,9 +73,58 @@ function openMenu(player) {
         switch (res.selection) {
             case 0: teleportToIsland(player); break;
             case 1: showIslandList(player); break;
-            case 2: showQuests(player); break;
-            case 3: confirmReset(player); break;
-            case 4: showHelp(player); break;
+            case 2: showVisitList(player); break;
+            case 3: showQuests(player); break;
+            case 4: confirmReset(player); break;
+            case 5: showHelp(player); break;
+        }
+    });
+}
+
+function showVisitList(player) {
+    const others = world.getAllPlayers().filter((p) => p.id !== player.id);
+    if (others.length === 0) {
+        player.sendMessage("§b[Skyblock] §7Er is verder niemand online — speel even mee met iemand anders!");
+        return;
+    }
+
+    // Filter to players who already have a main island
+    const visitable = others
+        .map((p) => ({ player: p, main: getMainIsland(p.id) }))
+        .filter((entry) => entry.main !== null);
+
+    if (visitable.length === 0) {
+        player.sendMessage("§b[Skyblock] §7De andere spelers hebben nog geen eiland.");
+        return;
+    }
+
+    const form = new ActionFormData()
+        .title("§b§lBezoek een speler")
+        .body("§7Tik op iemand om naar diens eiland te gaan:");
+
+    for (const entry of visitable) {
+        form.button(`§f${entry.player.name}`);
+    }
+
+    form.show(player).then((res) => {
+        if (res.canceled) return;
+        const target = visitable[res.selection];
+        if (!target) return;
+        const dim = world.getDimension("overworld");
+        try {
+            // Teleport visitor 1 block above the target's main island spawn
+            player.teleport(
+                { x: target.main.x + 0.5, y: 81, z: target.main.z + 0.5 },
+                { dimension: dim }
+            );
+            player.sendMessage(`§b[Skyblock] §aJe bent nu bij §f${target.player.name}§r§a!`);
+            // Notify the visited player
+            try {
+                target.player.sendMessage(`§b[Skyblock] §6${player.name}§7 komt op bezoek!`);
+                target.player.playSound("random.levelup");
+            } catch (e) { /* visited player may have left mid-tp */ }
+        } catch (e) {
+            player.sendMessage("§c[Skyblock] Het lukte niet om je te verplaatsen — probeer het nog eens.");
         }
     });
 }
@@ -145,6 +196,7 @@ function showHelp(player) {
     player.sendMessage("§b[Skyblock] §7Wat kun je typen?");
     player.sendMessage("§f/island §7- het menu openen");
     player.sendMessage("§f/home §7- naar je eiland gaan");
+    player.sendMessage("§f/visit §7- naar iemand anders gaan");
     player.sendMessage("§f/quests §7- je opdrachten bekijken");
     player.sendMessage("§f/reset §7- opdrachten opnieuw beginnen");
     player.sendMessage("§f/spawn §7- naar het beginpunt gaan");
