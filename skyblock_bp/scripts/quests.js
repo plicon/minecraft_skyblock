@@ -9,57 +9,57 @@ const QUEST_PREFIX = "sb:quest:"; // + playerId + ":" + questId -> count or done
 export const QUESTS = [
     {
         id: "cobble_64",
-        name: "§eMiner I",
-        desc: "Mine 64 cobblestone",
+        name: "§eMijnwerker I",
+        desc: "Hak 64 cobblestone",
         type: "break",
         block: "minecraft:cobblestone",
         target: 64,
-        reward: { item: "iron_ingot", count: 4, msg: "§a4x Iron Ingot" }
+        reward: { item: "iron_ingot", count: 4, msg: "§a4x IJzer" }
     },
     {
         id: "cobble_512",
-        name: "§eMiner II",
-        desc: "Mine 512 cobblestone",
+        name: "§eMijnwerker II",
+        desc: "Hak 512 cobblestone",
         type: "break",
         block: "minecraft:cobblestone",
         target: 512,
-        reward: { item: "diamond", count: 2, msg: "§b2x Diamond" }
+        reward: { item: "diamond", count: 2, msg: "§b2x Diamant" }
     },
     {
         id: "wood_32",
-        name: "§eLumberjack",
-        desc: "Chop 32 oak logs",
+        name: "§eHouthakker",
+        desc: "Hak 32 boomstammen",
         type: "break",
         block: "minecraft:oak_log",
         target: 32,
-        reward: { item: "iron_axe", count: 1, msg: "§7Iron Axe" }
+        reward: { item: "iron_axe", count: 1, msg: "§7IJzeren bijl" }
     },
     {
         id: "zombie_10",
-        name: "§eMonster Hunter",
-        desc: "Kill 10 zombies",
+        name: "§eMonsterjager",
+        desc: "Versla 10 zombies",
         type: "kill",
         entity: "minecraft:zombie",
         target: 10,
-        reward: { item: "golden_apple", count: 2, msg: "§62x Golden Apple" }
+        reward: { item: "golden_apple", count: 2, msg: "§62x Gouden appel" }
     },
     {
         id: "wheat_32",
-        name: "§eFarmer",
-        desc: "Harvest 32 wheat",
+        name: "§eBoer",
+        desc: "Oogst 32 tarwe",
         type: "break",
         block: "minecraft:wheat",
         target: 32,
-        reward: { item: "bread", count: 8, msg: "§e8x Bread" }
+        reward: { item: "bread", count: 8, msg: "§e8x Brood" }
     },
     {
         id: "obsidian_1",
-        name: "§eHardcore",
-        desc: "Mine 1 obsidian",
+        name: "§eStoere held",
+        desc: "Hak 1 obsidiaan",
         type: "break",
         block: "minecraft:obsidian",
         target: 1,
-        reward: { item: "diamond_pickaxe", count: 1, msg: "§bDiamond Pickaxe" }
+        reward: { item: "diamond_pickaxe", count: 1, msg: "§bDiamanten houweel" }
     }
 ];
 
@@ -88,8 +88,8 @@ function tryComplete(player, quest) {
         try {
             player.runCommand(`give @s ${r.item} ${r.count}`);
         } catch (e) { /* ignore */ }
-        player.sendMessage(`§b[Skyblock] §6Quest complete: ${quest.name}§r`);
-        player.sendMessage(`§b[Skyblock] §7Reward: §f${r.msg}`);
+        player.sendMessage(`§b[Skyblock] §6Opdracht klaar: ${quest.name}§r`);
+        player.sendMessage(`§b[Skyblock] §7Beloning: §f${r.msg}`);
         player.playSound("random.levelup");
     }
 }

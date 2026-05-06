@@ -10,7 +10,7 @@ import "./daily_islands.js";
 import { world } from "@minecraft/server";
 
 world.afterEvents.worldInitialize?.subscribe?.(() => {
-    world.sendMessage("§b[Skyblock] §7Addon loaded successfully.");
+    world.sendMessage("§b[Skyblock] §7Skyblock is geladen!");
 });
 
 // Fallback for when worldInitialize isn't available — log on first tick.
@@ -20,7 +20,7 @@ system.runInterval(() => {
     if (!booted) {
         booted = true;
         try {
-            world.sendMessage("§b[Skyblock] §7Ready. Type §a!island§7 in chat for the menu.");
+            world.sendMessage("§b[Skyblock] §7Klaar! Typ §a/island§7 om het menu te openen.");
         } catch (e) { /* world not ready yet */ }
     }
 }, 20);

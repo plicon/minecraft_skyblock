@@ -152,7 +152,7 @@ export function getAllIslands(playerId) {
         type: "main",
         x: main.x, y: ISLAND_Y, z: main.z,
         theme: "forest",
-        label: `§f★ Main           §aForest§r §7— y ${ISLAND_Y}`
+        label: `§f★ Hoofdeiland       §aBos§r §7— hoogte ${ISLAND_Y}`
     }];
 
     const bonuses = getBonusIslands(playerId);
@@ -166,7 +166,7 @@ export function getAllIslands(playerId) {
             type: "bonus",
             x: b.x, y: b.y, z: b.z,
             theme: b.theme,
-            label: `§f${num} Day ${i + 1}      ${theme.color}${theme.name}§r §7— y ${b.y}, ${dir} ${dist}`
+            label: `§f${num} Dag ${i + 1}      ${theme.color}${theme.name}§r §7— hoogte ${b.y}, ${dir} ${dist}`
         });
     });
 
@@ -255,13 +255,13 @@ export function teleportToIsland(player) {
             player.teleport({ x: x + 0.5, y, z: z + 0.5 }, { dimension });
             setIslandSpawnpoint(player, x, z);
             if (isNew) {
-                player.sendMessage("§b[Skyblock] §aYour new island is ready! §7Check the chest for starter items.");
-                player.sendMessage("§b[Skyblock] §7Tip: place §flava§7 above §fice§7 (with a block beside) to make a cobblestone generator.");
+                player.sendMessage("§b[Skyblock] §aJe eiland is klaar! §7Kijk in de kist — daar zit een houweel en spullen om mee te beginnen.");
+                player.sendMessage("§b[Skyblock] §7Tip: plak §fijs§7 in de zon zodat het smelt naar §fwater§7. Zet §flava§7 ernaast om steen te maken.");
             } else {
-                player.sendMessage("§b[Skyblock] §aTeleported to your island.");
+                player.sendMessage("§b[Skyblock] §aJe bent nu op je eiland.");
             }
         } catch (e) {
-            player.sendMessage("§c[Skyblock] Teleport failed — try again in a moment.");
+            player.sendMessage("§c[Skyblock] Het lukte niet — probeer het zo nog eens.");
         }
     }, delay);
 }
@@ -281,7 +281,7 @@ export function teleportToIsland(player) {
 export function generateBonusIsland(player) {
     const loc = pickBonusLocation(player.id);
     if (!loc) {
-        player.sendMessage("§b[Skyblock] §7Geen ruimte gevonden voor nieuw eiland — probeer later.");
+        player.sendMessage("§b[Skyblock] §7Geen plek gevonden voor een nieuw eiland — morgen weer proberen.");
         return false;
     }
 
@@ -310,11 +310,11 @@ export function generateBonusIsland(player) {
     }, 40);
 
     const bonusCount = getBonusIslands(player.id).length;
-    player.sendMessage("§b[Skyblock] §6Een nieuwe Minecraft-dag is aangebroken!");
+    player.sendMessage("§b[Skyblock] §6Goeiemorgen! Een nieuwe dag in Minecraft!");
     player.sendMessage(
-        `§b[Skyblock] §aBonus-eiland #${bonusCount} — ${theme.color}${theme.name}§r §a— gegenereerd op (${loc.x}, ${loc.y}, ${loc.z}).`
+        `§b[Skyblock] §aJe ${bonusCount}e extra eiland — ${theme.color}${theme.name}§r §a— ligt klaar op (${loc.x}, ${loc.y}, ${loc.z}).`
     );
-    player.sendMessage("§7Open §f!island§7 → §fMy Islands§7 om te bezoeken.");
+    player.sendMessage("§7Typ §f/island§7 → §fMijn eilanden§7 om er heen te gaan.");
     return true;
 }
 
@@ -327,7 +327,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 
     if (!visited) {
         world.setDynamicProperty(visitedKey, true);
-        player.sendMessage("§b[Skyblock] §7Welcome! Generating your private island...");
+        player.sendMessage("§b[Skyblock] §7Welkom! Je eigen eiland wordt nu gemaakt...");
         system.runTimeout(() => teleportToIsland(player), 20);
         return;
     }
