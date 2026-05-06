@@ -1,1 +1,6 @@
 .DS_Store
+
+# Third-party addon packs (drop unzipped addons in packs/ to auto-deploy them).
+# Most addons aren't redistributable, so they stay local.
+packs/*/
+!packs/README.md
