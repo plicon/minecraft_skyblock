@@ -1,47 +1,56 @@
 # Extra Packs
 
-Drop unzipped Bedrock addon folders here and they'll be auto-deployed
-alongside `skyblock_bp/` when you run `./deploy.sh`.
+Drop unzipped Bedrock addon folders here and `./deploy.sh` syncs them to
+the BDS automatically. The script auto-detects whether each pack is a
+behavior or resource pack via its `manifest.json`, and registers it in
+the right `world_*_packs.json`.
 
-## How it works
+## ⭐ Aanbevolen packs voor onze Skyblock
 
-`deploy.sh` scans this directory for any subfolder containing a
-`manifest.json`, reads the manifest to determine whether it's a behavior
-pack or resource pack (via `modules[*].type`), then:
+| Pack | Link | Waarom |
+|---|---|---|
+| **Lucky Blocks** door Effect99 | [CurseForge](https://www.curseforge.com/minecraft-bedrock/addons/lucky-blocks-effect99-addon) | Goed onderhouden, 1.21.20–1.21.90+, 157k+ downloads, kindvriendelijk |
+| **TNT Addon** door Diamondhead24 | [CurseForge](https://www.curseforge.com/minecraft-bedrock/addons/tnt-addon) | 5 TNTs + 2 bonus, sferische explosies, super tof voor kids |
 
-- copies it to `<BDS>/behavior_packs/` or `<BDS>/resource_packs/`
-- adds an entry to `world_behavior_packs.json` or `world_resource_packs.json`
+Optioneel:
+- **Trolling TNT** voor 100% schadeloze prank-TNTs (water/slijm/kippen)
+- **Realistic Lucky Block Addon** als alternatief voor Effect99
 
-Idempotent — re-running just bumps the version on existing entries.
+## 🚀 Workflow (3 commando's)
 
-## How to install an addon (e.g., Lucky Blocks)
+```bash
+# 1. Download de .mcaddon files via de bovenstaande CurseForge-links.
+#    Klik 'Download' → bestand belandt in ~/Downloads.
 
-1. Download the `.mcaddon` file from MCPEDL or wherever
-2. Rename it to `.zip` and unzip
-3. Inside, you typically get `something_bp/` and `something_rp/` folders
-4. Move both into this `packs/` directory:
+# 2. Pak ze uit naar packs/ met onze helper:
+./tools/install-mcaddon.sh ~/Downloads/lucky-blocks-effect99-*.mcaddon
+./tools/install-mcaddon.sh ~/Downloads/tnt-addon-*.mcaddon
 
-   ```
-   packs/
-     lucky_block_bp/
-       manifest.json
-       blocks/
-       scripts/
-     lucky_block_rp/
-       manifest.json
-       textures/
-       models/
-   ```
+# 3. Vraag de helper welke item-IDs hij detecteert:
+./tools/detect-ids.sh
+# → print de exacte regels voor skyblock_bp/scripts/integrations.js
 
-5. Run `./deploy.sh /path/to/bds Skyblock` — the new packs are picked up automatically
+# 4. Plak die regels in skyblock_bp/scripts/integrations.js
+#    en deploy:
+./deploy.sh /pad/naar/bedrock_server JouwWereld
+```
 
-## Recommended addons for this Skyblock setup
+Klaar. Vanaf de eerstvolgende zonsopkomst zit er kans op Lucky Blocks en
+fancy TNT in elke nieuwe bonus-eiland chest.
 
-- **Lucky Blocks**: <https://mcpedl.com/lucky-block-addon/>
-- **More TNT (Too Much TNT)**: <https://mcpedl.com/too-much-tnt-mod/>
-- **Trolling TNT** (kid-friendly, no damage): <https://mcpedl.com/trolling-tnt-addon/>
+## 🛠 Hoe het werkt
 
-## Privacy note
+`./deploy.sh` scant `packs/*` voor mappen met een `manifest.json`, leest
+`modules[*].type` om te bepalen of het een **behavior** of **resource**
+pack is, en routeert het naar `<BDS>/behavior_packs/` of
+`<BDS>/resource_packs/`. Vervolgens wordt de pack-UUID + versie
+**idempotent** toegevoegd aan respectievelijk `world_behavior_packs.json`
+of `world_resource_packs.json`.
 
-This directory is `.gitignore`-d — third-party addons stay on your machine
-and aren't committed to the repo (most are not redistributable anyway).
+Re-deployen is veilig: bestaande entries worden ge-update, geen
+duplicates.
+
+## Privacy
+
+`packs/*` staat in `.gitignore` — third-party addons blijven lokaal en
+worden niet meegecommit. Alleen deze README is in git.
