@@ -5,6 +5,7 @@
 // - Stores data via world dynamic properties
 
 import { world, system, BlockPermutation } from "@minecraft/server";
+import { getTheme } from "./themes.js";
 
 const ISLAND_SPACING = 1024;          // blocks between island centers
 const ISLAND_Y = 80;                  // island height
@@ -41,58 +42,39 @@ function spiralCoord(n) {
     return { x, z };
 }
 
-/** Generate the starter island structure at world coords. */
-function generateIsland(dimension, cx, cz) {
-    const y = ISLAND_Y;
+/** Generate an island structure at world coords with a given theme. */
+function generateIsland(dimension, cx, cy, cz, themeId = "forest") {
+    const theme = getTheme(themeId);
 
-    // 5x5 dirt platform with grass top
+    // 5x5 platform (surface) + 2 layers subsoil
     for (let dx = -2; dx <= 2; dx++) {
         for (let dz = -2; dz <= 2; dz++) {
             try {
-                dimension.getBlock({ x: cx + dx, y: y, z: cz + dz })
-                    ?.setPermutation(BlockPermutation.resolve("minecraft:grass_block"));
-                dimension.getBlock({ x: cx + dx, y: y - 1, z: cz + dz })
-                    ?.setPermutation(BlockPermutation.resolve("minecraft:dirt"));
-                dimension.getBlock({ x: cx + dx, y: y - 2, z: cz + dz })
-                    ?.setPermutation(BlockPermutation.resolve("minecraft:dirt"));
+                dimension.getBlock({ x: cx + dx, y: cy, z: cz + dz })
+                    ?.setPermutation(BlockPermutation.resolve(theme.surface));
+                dimension.getBlock({ x: cx + dx, y: cy - 1, z: cz + dz })
+                    ?.setPermutation(BlockPermutation.resolve(theme.sub));
+                dimension.getBlock({ x: cx + dx, y: cy - 2, z: cz + dz })
+                    ?.setPermutation(BlockPermutation.resolve(theme.sub));
             } catch (e) { /* chunk not loaded yet — handled by retry */ }
         }
     }
 
-    // Tree (oak log + leaves)
+    // Focal point in NW corner — delegated to theme
     try {
-        for (let i = 1; i <= 4; i++) {
-            dimension.getBlock({ x: cx - 2, y: y + i, z: cz - 2 })
-                ?.setPermutation(BlockPermutation.resolve("minecraft:oak_log"));
-        }
-        // Leaves canopy
-        for (let dx = -3; dx <= -1; dx++) {
-            for (let dz = -3; dz <= -1; dz++) {
-                for (let dy = 3; dy <= 5; dy++) {
-                    if (dx === -2 && dz === -2 && dy < 5) continue; // skip log column
-                    dimension.getBlock({ x: cx + dx, y: y + dy, z: cz + dz })
-                        ?.setPermutation(BlockPermutation.resolve("minecraft:oak_leaves"));
-                }
-            }
-        }
+        theme.placeFocal(dimension, cx - 2, cy, cz - 2);
     } catch (e) { /* ignore */ }
 
-    // Chest with starter items (placed on east edge)
+    // Chest with theme loot
     try {
-        const chestPos = { x: cx + 2, y: y + 1, z: cz };
+        const chestPos = { x: cx + 2, y: cy + 1, z: cz };
         dimension.getBlock(chestPos)?.setPermutation(BlockPermutation.resolve("minecraft:chest"));
-        // Fill chest via /replaceitem (works reliably)
-        const cmd = (slot, item, count = 1) =>
-            `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${slot} ${item} ${count}`;
-        dimension.runCommand(cmd(0, "ice", 2));
-        dimension.runCommand(cmd(1, "lava_bucket", 1));
-        dimension.runCommand(cmd(2, "bone", 4));
-        dimension.runCommand(cmd(3, "sapling", 2));
-        dimension.runCommand(cmd(4, "melon_seeds", 1));
-        dimension.runCommand(cmd(5, "pumpkin_seeds", 1));
-        dimension.runCommand(cmd(6, "sugar_cane", 1));
-        dimension.runCommand(cmd(7, "cactus", 1));
-        dimension.runCommand(cmd(8, "wheat_seeds", 2));
+        for (let i = 0; i < theme.loot.length; i++) {
+            const [item, count] = theme.loot[i];
+            dimension.runCommand(
+                `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${i} ${item} ${count}`
+            );
+        }
     } catch (e) { /* ignore */ }
 }
 
@@ -118,7 +100,7 @@ export function getOrCreateIsland(player) {
         // Force-load the area, then generate
         try { dim.runCommand(`tickingarea add ${cx - 16} 0 ${cz - 16} ${cx + 16} 200 ${cz + 16} sb_${player.id.replace(/-/g, "")}`); } catch (e) {}
         // Small delay so chunks load before placing blocks
-        system.runTimeout(() => generateIsland(dim, cx, cz), 40);
+        system.runTimeout(() => generateIsland(dim, cx, ISLAND_Y, cz, "forest"), 40);
     }
 
     return { x: cx, y: ISLAND_Y + 1, z: cz, dimension: dim, isNew };
