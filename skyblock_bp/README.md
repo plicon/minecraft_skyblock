@@ -26,10 +26,12 @@ Een complete Skyblock-ervaring voor je eigen Minecraft Bedrock Dedicated Server 
 - **Automatische eiland-generatie** — elke speler krijgt bij zijn eerste join een uniek eiland in een grid (1024 blokken uit elkaar)
 - **Multi-player ondersteuning** — onbeperkt aantal spelers, elk met eigen eiland
 - **Starter chest** — ice, lava bucket, saplings, seeds om mee te beginnen
+- **Daily bonus islands** — elke Minecraft-zonsopkomst een nieuw themed eiland erbij, gekoppeld in een keten rond je hoofdbasis (Forest, Tundra, Desert, Jungle, Mushroom, Cherry, Nether)
+- **Void respawn** — val je in de void? Geen probleem, je respawnt op je hoofdeiland
 - **Quest-systeem** — 6 challenges met progressie-tracking en beloningen
 - **Custom mob drops** — iron, diamond, emerald, redstone uit mobs (essentieel voor skyblock balans)
 - **Chat-commands** — `!island`, `!home`, `!quests`, `!reset`, etc.
-- **UI menu** — mooi grafisch menu via in-game forms
+- **UI menu** — mooi grafisch menu via in-game forms (incl. "My Islands" lijst voor bonus-eilanden)
 - **Persistent data** — alles wordt opgeslagen via dynamic properties (overleeft restarts)
 
 ---
@@ -270,6 +272,59 @@ Een grafisch menu met knoppen:
 
 ---
 
+## 🌅 Daily bonus islands
+
+Elke keer dat een Minecraft-nacht voorbij is (zonsopkomst — `world.getDay()` ophoogt) krijg je automatisch een nieuw eiland erbij. ~20 real-time minuten actieve speeltijd per eiland — tijd loopt alleen door als er iemand online is.
+
+### Hoe werkt het?
+
+- Bij zonsopkomst krijg je een chat-melding: `§b[Skyblock] §6Een nieuwe Minecraft-dag is aangebroken!`
+- Het nieuwe eiland verschijnt op **bouwbare afstand** (32-64 blokken) van je vorige eiland, op een variërende hoogte (Y 60-140)
+- Je archipel groeit organisch outward — je kunt letterlijk bridges bouwen tussen je eilanden
+- Maximaal 480 blokken horizontaal van je hoofdeiland → blijft binnen je territorium, geen botsingen met buren
+
+### De 7 themes
+
+Elk bonus-eiland heeft een willekeurig thema, met eigen blokken en chest-loot:
+
+| Theme | Kleur | Blokken | Loot highlights |
+|---|---|---|---|
+| Forest 🌲 | Groen | grass + dirt + oak | starter mix (ice, lava, saplings, seeds) |
+| Tundra ❄️ | Aqua | snow + packed_ice + spruce | ice ×4, snowball ×8, leather, beetroot |
+| Desert 🏜️ | Geel | sand + sandstone + cactus | sand ×8, dried_kelp, deadbush |
+| Jungle 🌴 | Donkergroen | grass + jungle log/leaves | jungle_sapling, melon, cocoa, bamboo |
+| Mushroom 🍄 | Paars | mycelium + huge mushroom | red/brown mushrooms, mushroom_stem |
+| Cherry 🌸 | Roze | grass + cherry log/leaves | cherry_sapling, sweet_berries |
+| Nether 🔥 | Rood | netherrack + soul_sand + crimson | nether_wart, glowstone, blaze_powder |
+
+Distributie: Forest 25%, Tundra/Desert/Jungle elk 15%, Mushroom/Cherry/Nether elk 10%.
+
+### Naar je bonus-eilanden teleporteren
+
+Geen typen nodig — alles via menu:
+
+1. Type `!island` (of klik in het hoofdmenu)
+2. Kies **My Islands**
+3. Zie de lijst met al je eilanden, gekleurd per thema, met hoogte en kompasrichting
+4. Klik op een eiland om er heen te teleporteren
+
+### Edge cases
+
+- **Lange tijd offline?** Bij terugkomst krijg je **één** bonus, niet één per gemiste dag (anti-stacking).
+- **Geen ruimte gevonden?** Als je archipel zo dicht is dat het algoritme geen plek vindt, krijg je een melding "Geen ruimte gevonden — probeer later". De volgende zonsopkomst probeert opnieuw met andere random waardes.
+
+---
+
+## 🪦 Void respawn
+
+Val je in de void of overlijd je op een andere manier? Je respawnt automatisch op je **hoofdeiland**, niet op world spawn. Dit gebeurt via een persoonlijk `/spawnpoint` dat we zetten zodra je hoofdeiland is gegenereerd.
+
+- Werkt voor alle death-causes (void, mob, fall, drowning, etc)
+- **Beds en respawn anchors blijven werken** — sleep je in een bed, dan respawn je daar (vanilla mechanic)
+- **Bestaande spelers** (van vóór 1.1.0) krijgen hun spawnpoint gezet bij hun eerstvolgende join
+
+---
+
 ## 🎯 Quests & beloningen
 
 | Quest | Doel | Beloning |
@@ -409,10 +464,12 @@ skyblock_bp/
 ├── README.md                  ← Dit bestand
 └── scripts/
     ├── main.js                ← Entry point, importeert alle modules
-    ├── island_manager.js      ← Eiland-generatie, grid, teleport, auto-spawn op join
+    ├── island_manager.js      ← Eiland-generatie (main + bonus), grid + chain, teleport, spawnpoint
+    ├── themes.js              ← Theme registry (7 themes) + focal-point builders
+    ├── daily_islands.js       ← Day-rollover loop (Minecraft-zonsopkomst → bonus eiland)
     ├── quests.js              ← Quest definities + tracking via events
     ├── balance.js             ← Bonus mob drops
-    └── commands.js            ← Chat commands + UI menu (server-ui)
+    └── commands.js            ← Chat commands + UI menu (incl. My Islands)
 ```
 
 ---
