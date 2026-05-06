@@ -30,7 +30,7 @@ Een complete Skyblock-ervaring voor je eigen Minecraft Bedrock Dedicated Server 
 - **Void respawn** — val je in de void? Geen probleem, je respawnt op je hoofdeiland
 - **Quest-systeem** — 6 challenges met progressie-tracking en beloningen
 - **Custom mob drops** — iron, diamond, emerald, redstone uit mobs (essentieel voor skyblock balans)
-- **Chat-commands** — `!island`, `!home`, `!quests`, `!reset`, etc.
+- **Slash commands** — `/island`, `/home`, `/quests`, `/reset`, etc. (met autocomplete in chat)
 - **UI menu** — mooi grafisch menu via in-game forms (incl. "My Islands" lijst voor bonus-eilanden)
 - **Persistent data** — alles wordt opgeslagen via dynamic properties (overleeft restarts)
 
@@ -213,8 +213,8 @@ Geen "The Void" preset beschikbaar? Twee minder ideale opties:
    [Skyblock] Welcome! Generating your private island...
    ```
 3. Na ~3 seconden word je geteleporteerd naar je eiland (5×5 grass, boom, chest met items).
-4. Type `!island` in chat → het menu opent.
-5. Type `!quests` → quest-overzicht.
+4. Type `/island` in chat → het menu opent (autocomplete suggereert het).
+5. Type `/quests` → quest-overzicht.
 6. Mine een paar cobblestone (gebruik je lava + ice voor een generator) → na 32 stuks zie je `Miner I: 32/64`.
 
 Als dit allemaal werkt: de addon draait correct. 🎉
@@ -252,16 +252,17 @@ Plaatje van bovenaf:
 
 ### Chat commands
 
-| Command | Korte vorm | Wat het doet |
-|---------|-----------|--------------|
-| `!island` | `!is` | Open het hoofdmenu |
-| `!home` | `!go` | Teleporteer naar je eiland |
-| `!quests` | `!q` | Bekijk je quest-progressie |
-| `!reset` | — | Reset quest-progressie (vraagt om bevestiging) |
-| `!spawn` | — | Ga naar wereld-spawn |
-| `!help` | — | Toon alle commands |
+| Command | Namespaced (fallback) | Wat het doet |
+|---------|----------------------|--------------|
+| `/island` | `/skyblock:island` | Open het hoofdmenu |
+| `/home` | `/skyblock:home` | Teleporteer naar je hoofdeiland |
+| `/quests` | `/skyblock:quests` | Bekijk je quest-progressie |
+| `/reset` | `/skyblock:reset` | Reset quest-progressie (vraagt om bevestiging) |
+| `/spawn` | `/skyblock:spawn` | Ga naar wereld-spawn |
 
-### Het menu (`!island`)
+> 💡 Bedrock toont je deze commands automatisch als je `/` typt — geen reden om alles uit je hoofd te leren.
+
+### Het menu (`/island`)
 
 Een grafisch menu met knoppen:
 - **Teleport to my Island** — terug naar je eiland
@@ -309,7 +310,7 @@ Distributie: Forest 25%, Tundra/Desert/Jungle elk 15%, Mushroom/Cherry/Nether el
 
 Geen typen nodig — alles via menu:
 
-1. Type `!island` (of klik in het hoofdmenu)
+1. Type `/island` (of klik in het hoofdmenu)
 2. Kies **My Islands**
 3. Zie de lijst met al je eilanden, gekleurd per thema, met hoogte en kompasrichting
 4. Klik op een eiland om er heen te teleporteren
@@ -443,7 +444,7 @@ Of verwijder oude ticking areas: `/tickingarea remove_all` (admin command).
 - Cheats moeten aan staan
 - Het pack moet in `world_behavior_packs.json` staan
 
-### Commands met `!` werken niet
+### Slash commands werken niet
 - Cheats aan?
 - Pack actief in de wereld?
 - Check console: errors uit `commands.js`?
@@ -455,7 +456,7 @@ Spelers hebben geen op-permissions nodig — de scripts draaien als systeem. Maa
 `ISLAND_SPACING` verhogen en de ticking area chunks reset. Bestaande eilanden blijven op hun oude positie tenzij je de dynamic properties wist.
 
 ### Quest-progressie resetten voor één speler
-Als admin in chat: gebruik de `/scriptevent`-aanpak of edit `dynamic_properties` direct (geavanceerd). Eenvoudigste: speler doet zelf `!reset`.
+Als admin in chat: edit `dynamic_properties` direct (geavanceerd). Eenvoudigste: speler doet zelf `/reset`.
 
 ### Volledig resetten (alle eilanden, alle data)
 Stop server → verwijder de wereld → maak nieuwe wereld met dezelfde behavior pack. Dynamic properties zijn world-gebonden.

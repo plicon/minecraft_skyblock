@@ -1,70 +1,52 @@
-// Chat Commands & UI Menu
-// Players type chat commands prefixed with "!"
-//   !island        - open menu
-//   !home / !is    - teleport to your island
-//   !reset         - reset your island (with confirmation)
-//   !quests        - show quest progress
-//   !spawn         - go to world spawn
+// Skyblock Custom Commands & UI Menu
+// Registers /skyblock:island (typeable as /island), /home, /quests, /reset,
+// /spawn so players can open menus and teleport without typing chat.
+//
+// Why custom commands instead of `!chat`: world.beforeEvents.chatSend was
+// moved from stable to beta in @minecraft/server. Beta APIs are off-limits
+// per CLAUDE.md, so we use the stable Custom Commands API. Bonus: it shows
+// up in Bedrock's command autocomplete (great for Xbox players).
 
-import { world, system } from "@minecraft/server";
+import { world, system, CommandPermissionLevel } from "@minecraft/server";
 import { ActionFormData, MessageFormData } from "@minecraft/server-ui";
 import { teleportToIsland, getAllIslands } from "./island_manager.js";
 import { QUESTS, getProgress, isDone } from "./quests.js";
 
-world.beforeEvents.chatSend.subscribe((ev) => {
-    const msg = ev.message.trim();
-    if (!msg.startsWith("!")) return;
-    ev.cancel = true; // don't broadcast the command
+// --- Command registration ---
+// Callbacks run in restricted mode; mutations must be deferred via system.run().
+system.beforeEvents.startup.subscribe((ev) => {
+    const reg = ev.customCommandRegistry;
 
-    const player = ev.sender;
-    const parts = msg.slice(1).split(/\s+/);
-    const cmd = parts[0].toLowerCase();
+    const command = (name, description, handler) => {
+        reg.registerCommand({
+            name: `skyblock:${name}`,
+            description,
+            permissionLevel: CommandPermissionLevel.Any,
+            cheatsRequired: false
+        }, (origin) => {
+            const player = origin.sourceEntity;
+            if (!player || player.typeId !== "minecraft:player") return;
+            system.run(() => handler(player));
+        });
+    };
 
-    // UI must be opened on the next tick (can't open from beforeEvent directly)
-    system.run(() => handleCommand(player, cmd, parts.slice(1)));
+    command("island", "Open the Skyblock menu",               openMenu);
+    command("home",   "Teleport to your main island",         teleportToIsland);
+    command("quests", "View your quest progress",             showQuests);
+    command("reset",  "Reset your quest progress (confirms)", confirmReset);
+    command("spawn",  "Teleport to world spawn",              teleportSpawn);
 });
 
-function handleCommand(player, cmd, args) {
-    switch (cmd) {
-        case "island":
-        case "is":
-            openMenu(player);
-            break;
-        case "home":
-        case "go":
-            teleportToIsland(player);
-            break;
-        case "quests":
-        case "q":
-            showQuests(player);
-            break;
-        case "reset":
-            confirmReset(player);
-            break;
-        case "spawn":
-            try {
-                const sp = world.getDefaultSpawnLocation();
-                player.teleport(sp, { dimension: world.getDimension("overworld") });
-                player.sendMessage("§b[Skyblock] §aTeleported to spawn.");
-            } catch (e) {
-                player.sendMessage("§c[Skyblock] Could not teleport to spawn.");
-            }
-            break;
-        case "help":
-            showHelp(player);
-            break;
-        default:
-            player.sendMessage(`§c[Skyblock] Unknown command: !${cmd}. Type §f!help`);
-    }
-}
+// --- Handlers ---
 
-function showHelp(player) {
-    player.sendMessage("§b[Skyblock] §7Commands:");
-    player.sendMessage("§f!island §7- open the menu");
-    player.sendMessage("§f!home §7- teleport to your island");
-    player.sendMessage("§f!quests §7- view quests");
-    player.sendMessage("§f!reset §7- reset your island");
-    player.sendMessage("§f!spawn §7- go to world spawn");
+function teleportSpawn(player) {
+    try {
+        const sp = world.getDefaultSpawnLocation();
+        player.teleport(sp, { dimension: world.getDimension("overworld") });
+        player.sendMessage("§b[Skyblock] §aTeleported to spawn.");
+    } catch (e) {
+        player.sendMessage("§c[Skyblock] Could not teleport to spawn.");
+    }
 }
 
 function openMenu(player) {
@@ -74,7 +56,7 @@ function openMenu(player) {
         .button("§aTeleport to my Island", "textures/items/ender_pearl")
         .button("§dMy Islands", "textures/items/map_filled")
         .button("§eView Quests", "textures/items/book_writable")
-        .button("§cReset Island", "textures/blocks/tnt_side")
+        .button("§cReset Quest Progress", "textures/blocks/tnt_side")
         .button("§7Help", "textures/items/paper");
 
     form.show(player).then((res) => {
@@ -100,9 +82,7 @@ function showIslandList(player) {
         .title("§b§lMy Islands")
         .body("§7Klik om te teleporteren:");
 
-    for (const isl of islands) {
-        form.button(isl.label);
-    }
+    for (const isl of islands) form.button(isl.label);
 
     form.show(player).then((res) => {
         if (res.canceled) return;
@@ -131,27 +111,35 @@ function showQuests(player) {
             body += `§e◯ ${q.name} §7- ${q.desc} §8(${p}/${q.target})\n`;
         }
     }
-    const form = new ActionFormData()
+    new ActionFormData()
         .title("§b§lQuests")
         .body(body)
-        .button("§7Close");
-    form.show(player);
+        .button("§7Close")
+        .show(player);
 }
 
 function confirmReset(player) {
-    const form = new MessageFormData()
-        .title("§c§lReset Island?")
-        .body("§7This will §cnot delete blocks§7, but you will be teleported back to your island spawn. Your quest progress is also reset.\n\n§eContinue?")
+    new MessageFormData()
+        .title("§c§lReset Quest Progress?")
+        .body("§7Dit reset al je quest-progressie. §cBlokken blijven§7. Je wordt teleporteerd naar je hoofdeiland.\n\n§eDoorgaan?")
         .button1("§cYes, reset")
-        .button2("§7Cancel");
+        .button2("§7Cancel")
+        .show(player).then((res) => {
+            if (res.canceled || res.selection !== 0) return;
+            for (const q of QUESTS) {
+                world.setDynamicProperty(`sb:quest:${player.id}:${q.id}`, undefined);
+            }
+            teleportToIsland(player);
+            player.sendMessage("§b[Skyblock] §aQuest progress reset.");
+        });
+}
 
-    form.show(player).then((res) => {
-        if (res.canceled || res.selection !== 0) return;
-        // Reset quest progress
-        for (const q of QUESTS) {
-            world.setDynamicProperty(`sb:quest:${player.id}:${q.id}`, undefined);
-        }
-        teleportToIsland(player);
-        player.sendMessage("§b[Skyblock] §aQuest progress reset. §7(Blocks remain — clear them manually if needed.)");
-    });
+function showHelp(player) {
+    player.sendMessage("§b[Skyblock] §7Commands:");
+    player.sendMessage("§f/island §7- open the menu");
+    player.sendMessage("§f/home §7- teleport to your island");
+    player.sendMessage("§f/quests §7- view quests");
+    player.sendMessage("§f/reset §7- reset your quest progress");
+    player.sendMessage("§f/spawn §7- go to world spawn");
+    player.sendMessage("§7(of namespaced: §f/skyblock:island§7 enz.)");
 }
