@@ -277,7 +277,8 @@ export function teleportToIsland(player) {
             player.teleport({ x: x + 0.5, y, z: z + 0.5 }, { dimension });
             setIslandSpawnpoint(player, x, z);
             if (isNew) {
-                player.sendMessage("§b[Skyblock] §aJe eiland is klaar! §7Kijk in de kist — daar zit een houweel en spullen om mee te beginnen.");
+                player.sendMessage("§b[Skyblock] §aJe eiland is klaar! §7Kijk in de kist — daar zit een houweel, spullen en een §fkompas§7.");
+                player.sendMessage("§b[Skyblock] §7Hou de §fkompas§7 vast en druk op §fgebruiken§7 (rechtermuis / ZL) om het menu te openen!");
                 player.sendMessage("§b[Skyblock] §7Tip: plak §fijs§7 in de zon zodat het smelt naar §fwater§7. Zet §flava§7 ernaast om steen te maken.");
             } else {
                 player.sendMessage("§b[Skyblock] §aJe bent nu op je eiland.");

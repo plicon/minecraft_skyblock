@@ -29,10 +29,13 @@ function buildTree(dim, x, y, z, logId, leavesId) {
 // Starter tools every island needs so a young player can immediately
 // gather resources (wooden pickaxe = unlock for cobblestone) without
 // having to figure out crafting from scratch.
+// The compass triggers the Skyblock menu via itemUse event — zero-typing
+// UX for kids on console where the chat-/-button isn't available.
 const STARTER_TOOLS = [
     ["wooden_pickaxe", 1],
     ["wooden_axe", 1],
-    ["crafting_table", 1]
+    ["crafting_table", 1],
+    ["compass", 1]
 ];
 
 export const THEMES = {

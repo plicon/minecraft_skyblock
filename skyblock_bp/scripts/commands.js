@@ -45,6 +45,16 @@ system.beforeEvents.startup.subscribe((ev) => {
     command("spawn",  "Ga naar het beginpunt van de wereld",     teleportSpawn);
 });
 
+// --- Menu compass ---
+// Holding a compass and using it (right-click / ZL / tap) opens the menu.
+// Zero-typing UX for console players where the chat-/-button is awkward.
+world.afterEvents.itemUse.subscribe((ev) => {
+    if (ev.itemStack?.typeId !== "minecraft:compass") return;
+    const player = ev.source;
+    if (!player || player.typeId !== "minecraft:player") return;
+    openMenu(player);
+});
+
 // --- Handlers ---
 
 function teleportSpawn(player) {
