@@ -7,10 +7,15 @@
 // per CLAUDE.md, so we use the stable Custom Commands API. Bonus: it shows
 // up in Bedrock's command autocomplete (great for Xbox players).
 
-import { world, system, CommandPermissionLevel } from "@minecraft/server";
+import { world, system } from "@minecraft/server";
 import { ActionFormData, MessageFormData } from "@minecraft/server-ui";
 import { teleportToIsland, getAllIslands } from "./island_manager.js";
 import { QUESTS, getProgress, isDone } from "./quests.js";
+
+// CommandPermissionLevel.Any = 0. Hardcoded as a literal to avoid relying on
+// the enum being a named export — its export shape has shifted between
+// @minecraft/server versions, but the numeric value is stable.
+const PERM_ANY = 0;
 
 // --- Command registration ---
 // Callbacks run in restricted mode; mutations must be deferred via system.run().
@@ -21,7 +26,7 @@ system.beforeEvents.startup.subscribe((ev) => {
         reg.registerCommand({
             name: `skyblock:${name}`,
             description,
-            permissionLevel: CommandPermissionLevel.Any,
+            permissionLevel: PERM_ANY,
             cheatsRequired: false
         }, (origin) => {
             const player = origin.sourceEntity;
