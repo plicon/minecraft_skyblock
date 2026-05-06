@@ -8,7 +8,7 @@
 
 import { world, system } from "@minecraft/server";
 import { ActionFormData, MessageFormData } from "@minecraft/server-ui";
-import { teleportToIsland } from "./island_manager.js";
+import { teleportToIsland, getAllIslands } from "./island_manager.js";
 import { QUESTS, getProgress, isDone } from "./quests.js";
 
 world.beforeEvents.chatSend.subscribe((ev) => {
@@ -72,6 +72,7 @@ function openMenu(player) {
         .title("§b§lSkyblock Menu")
         .body("§7Choose an option:")
         .button("§aTeleport to my Island", "textures/items/ender_pearl")
+        .button("§dMy Islands", "textures/items/map_filled")
         .button("§eView Quests", "textures/items/book_writable")
         .button("§cReset Island", "textures/blocks/tnt_side")
         .button("§7Help", "textures/items/paper");
@@ -80,9 +81,42 @@ function openMenu(player) {
         if (res.canceled) return;
         switch (res.selection) {
             case 0: teleportToIsland(player); break;
-            case 1: showQuests(player); break;
-            case 2: confirmReset(player); break;
-            case 3: showHelp(player); break;
+            case 1: showIslandList(player); break;
+            case 2: showQuests(player); break;
+            case 3: confirmReset(player); break;
+            case 4: showHelp(player); break;
+        }
+    });
+}
+
+function showIslandList(player) {
+    const islands = getAllIslands(player.id);
+    if (islands.length === 0) {
+        player.sendMessage("§b[Skyblock] §7Je hebt nog geen eiland.");
+        return;
+    }
+
+    const form = new ActionFormData()
+        .title("§b§lMy Islands")
+        .body("§7Klik om te teleporteren:");
+
+    for (const isl of islands) {
+        form.button(isl.label);
+    }
+
+    form.show(player).then((res) => {
+        if (res.canceled) return;
+        const target = islands[res.selection];
+        if (!target) return;
+        const dim = world.getDimension("overworld");
+        try {
+            player.teleport(
+                { x: target.x + 0.5, y: target.y + 1, z: target.z + 0.5 },
+                { dimension: dim }
+            );
+            player.sendMessage(`§b[Skyblock] §aTeleported to §f${target.label}§r§a.`);
+        } catch (e) {
+            player.sendMessage("§c[Skyblock] Teleport mislukt — probeer opnieuw.");
         }
     });
 }
