@@ -322,6 +322,42 @@ Geen typen nodig — alles via menu:
 
 ---
 
+## 🎁 Synergie met andere addons (optioneel)
+
+Heb je [Lucky Blocks](https://mcpedl.com/lucky-block-addon/) of [Too Much TNT](https://mcpedl.com/too-much-tnt-mod/) geïnstalleerd via `packs/`? Open dan `scripts/integrations.js` en vul de IDs in. Wat het oplevert:
+
+| Integration | Effect |
+|---|---|
+| **Lucky Block** | 10% kans op een Lucky Block in elke bonus-eiland chest. Nieuwe quest **"Gelukspoes"** (Hak 1 Lucky Block → 4× Diamant) |
+| **Roze TNT** (of vergelijkbaar) | 8% kans op 4× Roze TNT in een bonus chest |
+
+### Hoe vind je de IDs?
+
+1. Pak de `.mcaddon` van het pack uit (rename naar `.zip`).
+2. Open het BP en kijk in `blocks/*.json` (voor Lucky Block) of `items/*.json` (voor TNT-items).
+3. Het `description.identifier` veld is de ID, bijvoorbeeld `lucky:lucky_block` of `tugtnt:pink_tnt`.
+4. Vul in `scripts/integrations.js`:
+   ```js
+   luckyBlock: {
+       blockId: "lucky:lucky_block",   // ← jouw exacte ID
+       itemId:  "lucky:lucky_block",
+       chestChance: 0.10,
+       questTarget: 1
+   },
+   funTnt: {
+       itemId:      "tugtnt:pink_tnt", // ← jouw exacte ID
+       displayName: "Roze TNT",
+       chestChance: 0.08,
+       count:       4,
+       questTarget: 3
+   }
+   ```
+5. `./deploy.sh` draaien, server herstarten — vanaf nu zitten ze in de chests.
+
+> 💡 **Defensief:** als de IDs niet kloppen of het pack niet geladen is, gebeurt er niks (de `replaceitem` mislukt stilletjes). Geen crash, geen errors.
+
+---
+
 ## 🪦 Void respawn
 
 Val je in de void of overlijd je op een andere manier? Je respawnt automatisch op je **hoofdeiland**, niet op world spawn. Dit gebeurt via een persoonlijk `/spawnpoint` dat we zetten zodra je hoofdeiland is gegenereerd.

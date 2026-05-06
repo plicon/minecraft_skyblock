@@ -3,6 +3,7 @@
 // Rewards are given via /give commands.
 
 import { world, system } from "@minecraft/server";
+import { INTEGRATIONS, isLuckyBlockEnabled, isFunTntEnabled } from "./integrations.js";
 
 const QUEST_PREFIX = "sb:quest:"; // + playerId + ":" + questId -> count or done
 
@@ -62,6 +63,27 @@ export const QUESTS = [
         reward: { item: "diamond_pickaxe", count: 1, msg: "§bDiamanten houweel" }
     }
 ];
+
+// --- Optional integration quests ---
+// Only added when the corresponding addon is configured in integrations.js.
+if (isLuckyBlockEnabled()) {
+    QUESTS.push({
+        id: "lucky_break",
+        name: "§eGelukspoes",
+        desc: `Hak ${INTEGRATIONS.luckyBlock.questTarget}× een Lucky Block`,
+        type: "break",
+        block: INTEGRATIONS.luckyBlock.blockId,
+        target: INTEGRATIONS.luckyBlock.questTarget,
+        reward: { item: "diamond", count: 4, msg: "§b4x Diamant" }
+    });
+}
+
+if (isFunTntEnabled()) {
+    // We tellen de pickup-gebeurtenis via entityHurt-by-explosion is lastig;
+    // simpeler: deze quest komt later als we kunnen detecteren wie er TNT
+    // afsteekt. Voor nu: we registreren 'm niet automatisch.
+    // (Placeholder kept for future expansion.)
+}
 
 function progKey(playerId, questId) { return QUEST_PREFIX + playerId + ":" + questId; }
 

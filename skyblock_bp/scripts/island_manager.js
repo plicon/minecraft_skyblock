@@ -6,6 +6,7 @@
 
 import { world, system, BlockPermutation } from "@minecraft/server";
 import { getTheme, pickRandomTheme } from "./themes.js";
+import { INTEGRATIONS, isLuckyBlockEnabled, isFunTntEnabled } from "./integrations.js";
 
 const ISLAND_SPACING = 1024;          // blocks between island centers
 const ISLAND_Y = 80;                  // island height
@@ -196,15 +197,36 @@ function generateIsland(dimension, cx, cy, cz, themeId = "forest") {
         theme.placeFocal(dimension, cx - 2, cy, cz - 2);
     } catch (e) { /* ignore */ }
 
-    // Chest with theme loot
+    // Chest with theme loot + optional integration drops
     try {
         const chestPos = { x: cx + 2, y: cy + 1, z: cz };
         dimension.getBlock(chestPos)?.setPermutation(BlockPermutation.resolve("minecraft:chest"));
-        for (let i = 0; i < theme.loot.length; i++) {
-            const [item, count] = theme.loot[i];
+        let slot = 0;
+        for (const [item, count] of theme.loot) {
             dimension.runCommand(
-                `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${i} ${item} ${count}`
+                `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${slot} ${item} ${count}`
             );
+            slot++;
+        }
+
+        // Lucky Block (only if integration is configured)
+        if (isLuckyBlockEnabled() && Math.random() < INTEGRATIONS.luckyBlock.chestChance) {
+            try {
+                dimension.runCommand(
+                    `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${slot} ${INTEGRATIONS.luckyBlock.itemId} 1`
+                );
+                slot++;
+            } catch (e) { /* item id wrong, skip */ }
+        }
+
+        // Fun TNT (only if integration is configured)
+        if (isFunTntEnabled() && Math.random() < INTEGRATIONS.funTnt.chestChance) {
+            try {
+                dimension.runCommand(
+                    `replaceitem block ${chestPos.x} ${chestPos.y} ${chestPos.z} slot.container ${slot} ${INTEGRATIONS.funTnt.itemId} ${INTEGRATIONS.funTnt.count}`
+                );
+                slot++;
+            } catch (e) { /* item id wrong, skip */ }
         }
     } catch (e) { /* ignore */ }
 }
