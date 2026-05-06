@@ -5,6 +5,7 @@ import "./island_manager.js";
 import "./quests.js";
 import "./balance.js";
 import "./commands.js";
+import "./daily_islands.js";
 
 import { world } from "@minecraft/server";
 
