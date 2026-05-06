@@ -17,8 +17,11 @@ export const INTEGRATIONS = {
      *   - New quest: "Gelukspoes — Hak een Lucky Block"
      */
     luckyBlock: {
-        blockId:     null,             // e.g. "lucky:lucky_block"
-        itemId:      null,             // usually same as blockId
+        // Default for Effect99's Lucky Blocks pack on CurseForge.
+        // Other Effect99 variants you can swap to: effect99:lucky_block,
+        // effect99:lucky_horror, etc. — check packs/<name>/blocks/*.json.
+        blockId:     "effect99:lucky_mobs",
+        itemId:      "effect99:lucky_mobs",
         chestChance: 0.10,
         questTarget: 1
     },
@@ -30,8 +33,12 @@ export const INTEGRATIONS = {
      *   - New quest: "Pyromaan — Vind X Roze TNT"
      */
     funTnt: {
-        itemId:      null,             // e.g. "tugtnt:pink_tnt"
-        displayName: "Roze TNT",
+        // Default for Diamondhead24's TNT Addon on CurseForge.
+        // Other variants in the pack are tnt:tnt2 .. tnt:tnt7 — check
+        // packs/<name>/items/*.json to swap to a kid-friendlier one
+        // (e.g., a smaller-explosion variant).
+        itemId:      "tnt:tnt1",
+        displayName: "TNT Plus",
         chestChance: 0.08,
         count:       4,
         questTarget: 3
