@@ -50,6 +50,12 @@ Een complete Skyblock-ervaring voor je eigen Minecraft Bedrock Dedicated Server 
 
 ## 📦 Installatie (stap voor stap)
 
+> 💡 **Snelle installatie:** als je dit project als git-repo hebt staan, gebruik dan het meegeleverde `deploy.sh` script vanuit de repo root:
+> ```bash
+> ./deploy.sh /path/to/bedrock_server YourWorldName
+> ```
+> Dit kopieert het pack en update `world_behavior_packs.json` automatisch (idempotent — meerdere keren draaien = veilig). Onderstaande handmatige stappen zijn alleen nodig als je 't liever zelf doet of geen toegang hebt tot het script.
+
 ### Stap 1 — Pack op je server plaatsen
 
 1. Pak het pack uit (als je `skyblock_bp.mcpack` hebt: hernoem naar `.zip` en unzip, of unzip direct).
