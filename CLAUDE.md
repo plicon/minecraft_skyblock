@@ -4,7 +4,7 @@ Minecraft Bedrock 1.21.x behavior pack voor een dedicated server (BDS) draaiend 
 
 ## Stack
 - @minecraft/server 2.1.0 (stable) — bevat Custom Commands API (`customCommandRegistry`)
-- @minecraft/server-ui 1.3.0 (stable)
+- @minecraft/server-ui 2.0.0 (stable) — peer dep op @minecraft/server 2.x; verplichte match
 - Geen TypeScript, geen build-step — pure JS
 
 ## BDS versie

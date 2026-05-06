@@ -485,6 +485,6 @@ skyblock_bp/
 
 - Bedrock scripting docs: https://learn.microsoft.com/en-us/minecraft/creator/scriptapi/
 - Bedrock Wiki: https://wiki.bedrock.dev/
-- Script API versies: zie `manifest.json` dependencies — gebruikt stable `@minecraft/server` 2.1.0 (vereist voor de Custom Commands API) en `@minecraft/server-ui` 1.3.0
+- Script API versies: zie `manifest.json` dependencies — gebruikt stable `@minecraft/server` 2.1.0 (vereist voor de Custom Commands API) en `@minecraft/server-ui` 2.0.0 (peer-dep match met @minecraft/server 2.x)
 
 Veel plezier met je skyblock server! 🏝️
